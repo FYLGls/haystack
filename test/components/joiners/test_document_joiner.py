@@ -49,6 +49,26 @@ class TestDocumentJoiner:
         joiner = DocumentJoiner(join_mode="merge", weights=[0.0, 1.0])
         assert joiner.weights == [0.0, 1.0]
 
+    @pytest.mark.parametrize("join_mode", ["merge", "reciprocal_rank_fusion"])
+    @pytest.mark.parametrize("weights", [[1e308, 1e308], [1e308, 1.5e308], [0.0, 1e308, 1e308]])
+    def test_large_finite_weights_preserve_fusion_scores(self, join_mode, weights):
+        documents = [
+            [
+                Document(content=f"source-{index}-first", score=0.2),
+                Document(content=f"source-{index}-second", score=0.9),
+            ]
+            for index in range(len(weights))
+        ]
+        baseline = DocumentJoiner(join_mode=join_mode, weights=[weight / 1e308 for weight in weights])
+        joiner = DocumentJoiner(join_mode=join_mode, weights=weights)
+
+        expected = baseline.run(documents=documents)["documents"]
+        actual = joiner.run(documents=documents)["documents"]
+
+        assert joiner.weights == pytest.approx(baseline.weights)
+        assert [doc.id for doc in actual] == [doc.id for doc in expected]
+        assert [doc.score for doc in actual] == pytest.approx([doc.score for doc in expected])
+
     def test_init_with_top_k_none_is_valid(self):
         joiner = DocumentJoiner(top_k=None)
         assert joiner.top_k is None

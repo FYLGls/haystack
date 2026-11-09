@@ -146,6 +146,11 @@ class DocumentJoiner:
             weight_sum = sum(weights)
             if weight_sum == 0:
                 raise ValueError("The provided `weights` must not sum to zero.")
+            if not isfinite(weight_sum):
+                # Finite weights can overflow when summed; rescaling preserves their ratios.
+                max_weight = max(weights)
+                weights = [weight / max_weight for weight in weights]
+                weight_sum = sum(weights)
             self.weights: list[float] | None = [float(i) / weight_sum for i in weights]
         else:
             self.weights = None

@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Preserve the relative weights passed to ``DocumentJoiner`` when their sum
+    exceeds the floating-point range. Previously, large finite weights could
+    normalize to zero and produce zero scores in ``merge`` and
+    ``reciprocal_rank_fusion`` modes. The weights are now rescaled before
+    normalization in this case.
